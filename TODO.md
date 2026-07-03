@@ -1,0 +1,2 @@
+- Team modus umschalten, um Teams unterschiedliche Episoden zuzuteilen
+- Nachricht an Admin um eigene Jagd einzureichen
