@@ -349,6 +349,7 @@ document.getElementById("spieler-bearbeiten-abort-btn").addEventListener("click"
     document.getElementById("spieler-bearbeiten-antwort-reset").checked = false;
     document.getElementById("spieler-bearbeiten-tipp-reset").checked = false;
     document.getElementById("spieler-bearbeiten-aktiv").checked = false;
+    document.getElementById("spieler-bearbeiten-episoden-wechsel").checked = false;
     document.getElementById("spieler-bearbeiten-error-msg").innerText = "";
 
     // Bereiche umschalten
@@ -407,6 +408,10 @@ document.getElementById("spieler-bearbeiten-name").addEventListener("change", as
     // Episoden Freigabe auswerten
     const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
     aktivCheckbox.checked = spielerEpisode.aktiv;
+
+    // Episoden Wechsel auswerten
+    const wechselCheckbox = document.getElementById("spieler-bearbeiten-episoden-wechsel");
+    wechselCheckbox.checked = auswahlSpieler.episodenWechsel;
 });
 
 document.getElementById("spieler-bearbeiten-episode").addEventListener("change", async (event) => {
@@ -437,6 +442,10 @@ document.getElementById("spieler-bearbeiten-episode").addEventListener("change",
     // Episoden Freigabe auswerten
     const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
     aktivCheckbox.checked = spielerEpisode.aktiv;
+
+    // Episoden Wechsel auswerten
+    const wechselCheckbox = document.getElementById("spieler-bearbeiten-episoden-wechsel");
+    wechselCheckbox.checked = auswahlSpieler.episodenWechsel;
 });
 
 document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click", async () => {
@@ -447,6 +456,7 @@ document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click",
     const antwortReset = document.getElementById("spieler-bearbeiten-antwort-reset").checked;
     const tippReset = document.getElementById("spieler-bearbeiten-tipp-reset").checked;
     const aktiv = document.getElementById("spieler-bearbeiten-aktiv").checked;
+    const episodenWechsel = document.getElementById("spieler-bearbeiten-episoden-wechsel").checked;
     const errorMsg = document.getElementById("spieler-bearbeiten-error-msg");
 
     // Prüfung auf Vollständigkeit
@@ -463,7 +473,6 @@ document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click",
         // Daten in Datenbank schreiben
         try {
             // Alle Spieler laden und markierten suchen
-            //? alleSpieler = await fb.getAllDocuments("spieler");
             const gefundeneSpieler = alleSpieler.find(s => s.spielerName === nameInput);
             
             // Sicherheitsprüfung
@@ -482,7 +491,8 @@ document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click",
                     // Daten in Datenbank schreiben
                     await fb.updateDocument("spieler", gefundeneSpieler.id, {
                         aktiveEpisode: aktiveEpisodeInput,
-                        episoden: episoden
+                        episoden: episoden,
+                        episodenWechsel: episodenWechsel
                     });
                 }
 

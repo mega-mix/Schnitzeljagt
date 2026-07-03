@@ -1,3 +1,0 @@
-- Admin soll neue Episoden für einzelne Spieler freigeben können
-- Team modus umschalten, um Teams unterschiedliche Episoden zuzuteilen
-- Nachricht an Admin um eigene Jagd einzureichen

@@ -64,6 +64,7 @@ export class FirebaseService {
         await setDoc(docRef, {
             spielerName: saubererName.trim(),
             aktiveEpisode: 1,
+            episodenWechsel: true,
             episoden: episoden
         });
 
