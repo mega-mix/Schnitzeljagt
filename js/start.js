@@ -88,7 +88,7 @@ fb.onAuthChanged(async (user) => {
                         opt.value = key; 
                         opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
                         opt.disabled = !spielerInfo.episoden[key].aktiv;
-                        if (!spielerInfo.episoden[key].aktiv) opt.textContent += " - 🔒💲";
+                        if (!spielerInfo.episoden[key].aktiv) opt.textContent += " 🔒💲";
                         dropdownEpisoden.appendChild(opt);
                     });
                     dropdownEpisoden.value = spielerInfo.aktiveEpisode;
@@ -156,7 +156,7 @@ document.getElementById("start-fortschritt-btn").addEventListener("click", async
         opt.value = key; 
         opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
         opt.disabled = !spielerInfo.episoden[key].aktiv;
-        if (!spielerInfo.episoden[key].aktiv) opt.textContent += " - 🔒💲";
+        if (!spielerInfo.episoden[key].aktiv) opt.textContent += " 🔒💲";
         dropdownEpisoden.appendChild(opt);
     });
     dropdownEpisoden.value = spielerInfo.aktiveEpisode;
@@ -189,7 +189,7 @@ document.getElementById("start-neue-episode-btn").addEventListener("click", () =
             const opt = document.createElement("option");
             opt.value = key; 
             opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
-            if (!spielStatus.episodenKatalog[key].freeToPlay) opt.textContent += " - 🔒💲";
+            if (!spielStatus.episodenKatalog[key].freeToPlay) opt.textContent += " 🔒💲";
             dropdownEpisoden.appendChild(opt);
         }
     });
@@ -315,7 +315,7 @@ document.getElementById("neue-episode-laden-btn").addEventListener("click", asyn
             opt.value = key; 
             opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
             opt.disabled = !spielerInfo.episoden[key].aktiv;
-            if (!spielerInfo.episoden[key].aktiv) opt.textContent += " - 🔒💲";
+            if (!spielerInfo.episoden[key].aktiv) opt.textContent += " 🔒💲";
             dropdownEpisoden.appendChild(opt);
         });
 

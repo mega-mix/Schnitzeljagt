@@ -7,6 +7,7 @@ Alle signifikanten Änderungen an diesem Projekt werden in dieser Datei dokument
 ### Hinzugefügt
 * README und CHANGELOG erstellt.
 * Admin kann das Wechseln von Episoden für einzelne Spieler verbieten.
+* Admin kann neue Episoden in Spielerdaten schreiben
 ### Geändert
 * TODO ist nun eine .md
 * Überschrift beim laden von Episoden verbessert.

@@ -365,24 +365,42 @@ document.getElementById("spieler-bearbeiten-name").addEventListener("change", as
     // Dropdown für aktive Episoden füllen (Nur vom Spieler geladene)
     const dropdownAktiveEpisode = document.getElementById("spieler-bearbeiten-aktive-episode");
     dropdownAktiveEpisode.innerHTML = "";
-    const aktiveEpisodenAnzahl = Object.keys(alleSpieler[auswahlIndex].episoden).length;
-    for (let i = 1; i <= aktiveEpisodenAnzahl; i++) {
+    const spielerEpisodenKeys = Object.keys(alleSpieler[auswahlIndex].episoden);
+    for (let i = 1; i <= spielerEpisodenKeys.length; i++) {
         const opt = document.createElement("option");
         opt.value = i;
-        opt.textContent = "Episode " + (i) + " - " + spielStatus.episodenKatalog[i].titel;
-        if (!alleSpieler[auswahlIndex].episoden[i].aktiv) opt.textContent += " - 🔒💲";
+        const key = spielerEpisodenKeys[i-1];
+        opt.textContent = "Episode " + (key) + " - " + spielStatus.episodenKatalog[key].titel;
+        if (!alleSpieler[auswahlIndex].episoden[key].aktiv) opt.textContent += " 🔒💲";
         dropdownAktiveEpisode.appendChild(opt);
     };
 
-    // Dropdown für Episoden füllen (Nur vom Spieler geladene)
+    // Dropdown für alle Episoden füllen
     const dropdownEpisode = document.getElementById("spieler-bearbeiten-episode");
     dropdownEpisode.innerHTML = "";
-    const episodenAnzahl = Object.keys(alleSpieler[auswahlIndex].episoden).length;
-    for (let i = 1; i <= episodenAnzahl; i++) {
+    const alleEpisodenKeys = Object.keys(spielStatus.episodenKatalog);
+    for (let i = 1; i <= alleEpisodenKeys.length; i++) {
         const opt = document.createElement("option");
         opt.value = i;
-        opt.textContent = "Episode " + (i) + " - " + spielStatus.episodenKatalog[i].titel;
-        if (!alleSpieler[auswahlIndex].episoden[i].aktiv) opt.textContent += " - 🔒💲";
+        const key = alleEpisodenKeys[i-1];
+        opt.textContent = "Episode " + (key) + " - " + spielStatus.episodenKatalog[key].titel;
+        if (alleSpieler[auswahlIndex].episoden?.[key] !== undefined) {
+            // Wenn Spieler die Episode geladen hat
+            if (!spielStatus.episodenKatalog[key].freeToPlay) {
+                if (!alleSpieler[auswahlIndex].episoden[key].aktiv) {
+                    opt.textContent += " 🔒💲";
+                } else {
+                    opt.textContent += " 💲";
+                }
+            }
+        } else {
+            // Wenn Spieler die Episode noch nicht geladen hat
+            if (!spielStatus.episodenKatalog[key].freeToPlay) {
+                opt.textContent += " 💲🆕";
+            } else {
+                opt.textContent += " 🆕";
+            }
+        }
         dropdownEpisode.appendChild(opt);
     };
 
@@ -433,15 +451,24 @@ document.getElementById("spieler-bearbeiten-episode").addEventListener("change",
         opt.textContent = "Station " + (i+1);
         dropdownStation.appendChild(opt);
     });
-
-    // Dropdown auf Spieler einstellen
-    const auswahlSpieler = alleSpieler[auswahlIndex];
-    const spielerEpisode = auswahlSpieler.episoden[auswahlEpisode];
-    dropdownStation.value = String(spielerEpisode.station);
-
-    // Episoden Freigabe auswerten
     const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
-    aktivCheckbox.checked = spielerEpisode.aktiv;
+
+    // Optionen setzen
+    const auswahlSpieler = alleSpieler[auswahlIndex];
+    if (auswahlSpieler.episoden[auswahlEpisode] !== undefined) {
+        // Dropdown auf Spieler einstellen
+        const spielerEpisode = auswahlSpieler.episoden[auswahlEpisode];
+        dropdownStation.value = String(spielerEpisode.station);
+
+        // Episoden Freigabe auswerten
+        aktivCheckbox.checked = spielerEpisode.aktiv;
+    } else {
+        // Dropdown auf 1
+        dropdownStation.value = "1";
+
+        // Episoden FreeToPlay auswerten
+        aktivCheckbox.checked = spielStatus.episodenKatalog[auswahlEpisode].freeToPlay;
+    }
 
     // Episoden Wechsel auswerten
     const wechselCheckbox = document.getElementById("spieler-bearbeiten-episoden-wechsel");
@@ -481,24 +508,53 @@ document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click",
                     // Episoden des Spielers holen
                     const episoden = gefundeneSpieler.episoden;
 
-                    // Neue Werte übernehmen
-                    episoden[episodeInput].station = stationInput;
-                    if (antwortReset) episoden[episodeInput].antworten = [];
-                    if (tippReset) episoden[episodeInput].tipps = [];
-                    episoden[episodeInput].aktiv = aktiv;
-                    episoden[episodeInput].zeitstempel = Date.now();
+                    if (episoden[episodeInput] !== undefined) {
+                        // Episode bei Spieler vorhanden
+                        // Neue Werte übernehmen
+                        episoden[episodeInput].station = stationInput;
+                        if (antwortReset) episoden[episodeInput].antworten = [];
+                        if (tippReset) episoden[episodeInput].tipps = [];
+                        episoden[episodeInput].aktiv = aktiv;
+                        episoden[episodeInput].zeitstempel = Date.now();
+                    } else {
+                        // Episode nicht bei Spieler vorhanden
+                        // Neues Episoden Objekt lokal erstellen
+                        episoden[episodeInput] = { aktiv: aktiv, station: 1, antworten: [], tipps: [], zeitstempel: Date.now() };
+                    }
 
                     // Daten in Datenbank schreiben
                     await fb.updateDocument("spieler", gefundeneSpieler.id, {
                         aktiveEpisode: aktiveEpisodeInput,
-                        episoden: episoden,
-                        episodenWechsel: episodenWechsel
+                        episodenWechsel: episodenWechsel,
+                        [`episoden.${episodeInput}`]: episoden[episodeInput]
                     });
                 }
 
                 // GUI zurücksetzen
                 document.getElementById("spieler-bearbeiten-antwort-reset").checked = false;
                 document.getElementById("spieler-bearbeiten-tipp-reset").checked = false;
+
+                // Episoden Dropdown Text aktualisieren
+                const dropdownEpisode = document.getElementById("spieler-bearbeiten-episode");
+                let neuerText = "Episode " + (episodeInput) + " - " + spielStatus.episodenKatalog[episodeInput].titel;
+                if (gefundeneSpieler.episoden?.[episodeInput] !== undefined) {
+                    // Wenn Spieler die Episode geladen hat
+                    if (!spielStatus.episodenKatalog[episodeInput].freeToPlay) {
+                        if (!gefundeneSpieler.episoden[episodeInput].aktiv) {
+                            neuerText += " 🔒💲";
+                        } else {
+                            neuerText += " 💲";
+                        }
+                    }
+                } else {
+                    // Wenn Spieler die Episode noch nicht geladen hat
+                    if (!spielStatus.episodenKatalog[episodeInput].freeToPlay) {
+                        neuerText += " 💲🆕";
+                    } else {
+                        neuerText += " 🆕";
+                    }
+                }
+                dropdownEpisode.options[dropdownEpisode.selectedIndex].textContent = neuerText;
 
                 // GUI Visuelles Feedback
                 bearbeitenSaveBtn.classList.remove("btn-success-flash");
