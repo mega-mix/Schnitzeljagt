@@ -3,7 +3,7 @@ import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, setDoc, dele
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 
-export const APP_VERSION ="v1.8.0";
+export const APP_VERSION ="v1.9.0";
 
 export class FirebaseService {
     constructor() {
@@ -64,6 +64,7 @@ export class FirebaseService {
         await setDoc(docRef, {
             spielerName: saubererName.trim(),
             aktiveEpisode: 1,
+            episodenWechsel: true,
             episoden: episoden
         });
 

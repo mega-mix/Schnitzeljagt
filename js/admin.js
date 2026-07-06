@@ -349,6 +349,7 @@ document.getElementById("spieler-bearbeiten-abort-btn").addEventListener("click"
     document.getElementById("spieler-bearbeiten-antwort-reset").checked = false;
     document.getElementById("spieler-bearbeiten-tipp-reset").checked = false;
     document.getElementById("spieler-bearbeiten-aktiv").checked = false;
+    document.getElementById("spieler-bearbeiten-episoden-wechsel").checked = false;
     document.getElementById("spieler-bearbeiten-error-msg").innerText = "";
 
     // Bereiche umschalten
@@ -359,29 +360,47 @@ document.getElementById("spieler-bearbeiten-abort-btn").addEventListener("click"
 document.getElementById("spieler-bearbeiten-name").addEventListener("change", async (event) => {
     // Spieler Index aus Dropdown holen
     const dropdownSpieler = event.target.value;
-    const auswahlIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler);
+    const spielerIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler);
 
     // Dropdown für aktive Episoden füllen (Nur vom Spieler geladene)
     const dropdownAktiveEpisode = document.getElementById("spieler-bearbeiten-aktive-episode");
     dropdownAktiveEpisode.innerHTML = "";
-    const aktiveEpisodenAnzahl = Object.keys(alleSpieler[auswahlIndex].episoden).length;
-    for (let i = 1; i <= aktiveEpisodenAnzahl; i++) {
+    const spielerEpisodenKeys = Object.keys(alleSpieler[spielerIndex].episoden);
+    for (let i = 1; i <= spielerEpisodenKeys.length; i++) {
         const opt = document.createElement("option");
         opt.value = i;
-        opt.textContent = "Episode " + (i) + " - " + spielStatus.episodenKatalog[i].titel;
-        if (!alleSpieler[auswahlIndex].episoden[i].aktiv) opt.textContent += " - 🔒💲";
+        const key = spielerEpisodenKeys[i-1];
+        opt.textContent = "Episode " + (key) + " - " + spielStatus.episodenKatalog[key].titel;
+        if (!alleSpieler[spielerIndex].episoden[key].aktiv) opt.textContent += " 🔒💲";
         dropdownAktiveEpisode.appendChild(opt);
     };
 
-    // Dropdown für Episoden füllen (Nur vom Spieler geladene)
+    // Dropdown für alle Episoden füllen
     const dropdownEpisode = document.getElementById("spieler-bearbeiten-episode");
     dropdownEpisode.innerHTML = "";
-    const episodenAnzahl = Object.keys(alleSpieler[auswahlIndex].episoden).length;
-    for (let i = 1; i <= episodenAnzahl; i++) {
+    const alleEpisodenKeys = Object.keys(spielStatus.episodenKatalog);
+    for (let i = 1; i <= alleEpisodenKeys.length; i++) {
         const opt = document.createElement("option");
         opt.value = i;
-        opt.textContent = "Episode " + (i) + " - " + spielStatus.episodenKatalog[i].titel;
-        if (!alleSpieler[auswahlIndex].episoden[i].aktiv) opt.textContent += " - 🔒💲";
+        const key = alleEpisodenKeys[i-1];
+        opt.textContent = "Episode " + (key) + " - " + spielStatus.episodenKatalog[key].titel;
+        if (alleSpieler[spielerIndex].episoden?.[key] !== undefined) {
+            // Wenn Spieler die Episode geladen hat
+            if (!spielStatus.episodenKatalog[key].freeToPlay) {
+                if (!alleSpieler[spielerIndex].episoden[key].aktiv) {
+                    opt.textContent += " 🔒💲";
+                } else {
+                    opt.textContent += " 💲";
+                }
+            }
+        } else {
+            // Wenn Spieler die Episode noch nicht geladen hat
+            if (!spielStatus.episodenKatalog[key].freeToPlay) {
+                opt.textContent += " 💲🆕";
+            } else {
+                opt.textContent += " 🆕";
+            }
+        }
         dropdownEpisode.appendChild(opt);
     };
 
@@ -399,7 +418,7 @@ document.getElementById("spieler-bearbeiten-name").addEventListener("change", as
     });
 
     // Dropdown auf Spieler einstellen
-    const auswahlSpieler = alleSpieler[auswahlIndex];
+    const auswahlSpieler = alleSpieler[spielerIndex];
     const spielerEpisode = auswahlSpieler.episoden[dropdownEpisode.value];
     dropdownStation.value = String(spielerEpisode.station);
     dropdownAktiveEpisode.value = String(auswahlSpieler.aktiveEpisode);
@@ -407,17 +426,24 @@ document.getElementById("spieler-bearbeiten-name").addEventListener("change", as
     // Episoden Freigabe auswerten
     const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
     aktivCheckbox.checked = spielerEpisode.aktiv;
+
+    // Episoden Wechsel auswerten
+    const wechselCheckbox = document.getElementById("spieler-bearbeiten-episoden-wechsel");
+    wechselCheckbox.checked = auswahlSpieler.episodenWechsel;
 });
 
 document.getElementById("spieler-bearbeiten-episode").addEventListener("change", async (event) => {
-    const auswahlEpisode = event.target.value;
+    const episodeKey = event.target.value;
+    const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
+    const wechselCheckbox = document.getElementById("spieler-bearbeiten-episoden-wechsel");
 
     // Spieler Index aus Dropdown holen
     const dropdownSpieler = document.getElementById("spieler-bearbeiten-name");
-    const auswahlIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler.value);
+    const spielerIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler.value);
+    const auswahlSpieler = alleSpieler[spielerIndex];
 
     // Stationen zur ausgewählten Episode laden
-    await stationenLaden(auswahlEpisode);
+    await stationenLaden(episodeKey);
 
     // Dropdown der Stationen füllen
     const dropdownStation = document.getElementById("spieler-bearbeiten-station");
@@ -429,14 +455,24 @@ document.getElementById("spieler-bearbeiten-episode").addEventListener("change",
         dropdownStation.appendChild(opt);
     });
 
-    // Dropdown auf Spieler einstellen
-    const auswahlSpieler = alleSpieler[auswahlIndex];
-    const spielerEpisode = auswahlSpieler.episoden[auswahlEpisode];
-    dropdownStation.value = String(spielerEpisode.station);
+    // Optionen setzen
+    if (auswahlSpieler.episoden[episodeKey] !== undefined) {
+        // Dropdown auf Spieler einstellen
+        const spielerEpisode = auswahlSpieler.episoden[episodeKey];
+        dropdownStation.value = String(spielerEpisode.station);
 
-    // Episoden Freigabe auswerten
-    const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
-    aktivCheckbox.checked = spielerEpisode.aktiv;
+        // Episoden Freigabe auswerten
+        aktivCheckbox.checked = spielerEpisode.aktiv;
+    } else {
+        // Dropdown auf 1
+        dropdownStation.value = "1";
+
+        // Episoden FreeToPlay auswerten
+        aktivCheckbox.checked = spielStatus.episodenKatalog[episodeKey].freeToPlay;
+    }
+
+    // Episoden Wechsel auswerten
+    wechselCheckbox.checked = auswahlSpieler.episodenWechsel;
 });
 
 document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click", async () => {
@@ -447,6 +483,7 @@ document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click",
     const antwortReset = document.getElementById("spieler-bearbeiten-antwort-reset").checked;
     const tippReset = document.getElementById("spieler-bearbeiten-tipp-reset").checked;
     const aktiv = document.getElementById("spieler-bearbeiten-aktiv").checked;
+    const episodenWechsel = document.getElementById("spieler-bearbeiten-episoden-wechsel").checked;
     const errorMsg = document.getElementById("spieler-bearbeiten-error-msg");
 
     // Prüfung auf Vollständigkeit
@@ -463,7 +500,6 @@ document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click",
         // Daten in Datenbank schreiben
         try {
             // Alle Spieler laden und markierten suchen
-            //? alleSpieler = await fb.getAllDocuments("spieler");
             const gefundeneSpieler = alleSpieler.find(s => s.spielerName === nameInput);
             
             // Sicherheitsprüfung
@@ -472,23 +508,53 @@ document.getElementById("spieler-bearbeiten-save-btn").addEventListener("click",
                     // Episoden des Spielers holen
                     const episoden = gefundeneSpieler.episoden;
 
-                    // Neue Werte übernehmen
-                    episoden[episodeInput].station = stationInput;
-                    if (antwortReset) episoden[episodeInput].antworten = [];
-                    if (tippReset) episoden[episodeInput].tipps = [];
-                    episoden[episodeInput].aktiv = aktiv;
-                    episoden[episodeInput].zeitstempel = Date.now();
+                    if (episoden[episodeInput] !== undefined) {
+                        // Episode bei Spieler vorhanden
+                        // Neue Werte übernehmen
+                        episoden[episodeInput].station = stationInput;
+                        if (antwortReset) episoden[episodeInput].antworten = [];
+                        if (tippReset) episoden[episodeInput].tipps = [];
+                        episoden[episodeInput].aktiv = aktiv;
+                        episoden[episodeInput].zeitstempel = Date.now();
+                    } else {
+                        // Episode nicht bei Spieler vorhanden
+                        // Neues Episoden Objekt lokal erstellen
+                        episoden[episodeInput] = { aktiv: aktiv, station: 1, antworten: [], tipps: [], zeitstempel: Date.now() };
+                    }
 
                     // Daten in Datenbank schreiben
                     await fb.updateDocument("spieler", gefundeneSpieler.id, {
                         aktiveEpisode: aktiveEpisodeInput,
-                        episoden: episoden
+                        episodenWechsel: episodenWechsel,
+                        [`episoden.${episodeInput}`]: episoden[episodeInput]
                     });
                 }
 
                 // GUI zurücksetzen
                 document.getElementById("spieler-bearbeiten-antwort-reset").checked = false;
                 document.getElementById("spieler-bearbeiten-tipp-reset").checked = false;
+
+                // Episoden Dropdown Text aktualisieren
+                const dropdownEpisode = document.getElementById("spieler-bearbeiten-episode");
+                let neuerText = "Episode " + (episodeInput) + " - " + spielStatus.episodenKatalog[episodeInput].titel;
+                if (gefundeneSpieler.episoden?.[episodeInput] !== undefined) {
+                    // Wenn Spieler die Episode geladen hat
+                    if (!spielStatus.episodenKatalog[episodeInput].freeToPlay) {
+                        if (!gefundeneSpieler.episoden[episodeInput].aktiv) {
+                            neuerText += " 🔒💲";
+                        } else {
+                            neuerText += " 💲";
+                        }
+                    }
+                } else {
+                    // Wenn Spieler die Episode noch nicht geladen hat
+                    if (!spielStatus.episodenKatalog[episodeInput].freeToPlay) {
+                        neuerText += " 💲🆕";
+                    } else {
+                        neuerText += " 🆕";
+                    }
+                }
+                dropdownEpisode.options[dropdownEpisode.selectedIndex].textContent = neuerText;
 
                 // GUI Visuelles Feedback
                 bearbeitenSaveBtn.classList.remove("btn-success-flash");
@@ -857,12 +923,12 @@ document.getElementById("station-save-btn").addEventListener("click", async () =
 });
 
 document.getElementById("station-delete-btn").addEventListener("click", async () => {
-    const indexInput = document.getElementById("station-nummer").value;
-    const episodeInput = document.getElementById("station-episode").value;
+    const stationNr = document.getElementById("station-nummer").value;
+    const episodeNr = document.getElementById("station-episode").value;
     const errorMsg = document.getElementById("station-error-msg");
 
     // Input prüfen
-    if (!indexInput) {
+    if (!stationNr) {
         errorMsg.innerText = "Bitte Stationsnummer zum löschen angeben!";
         return;
     }
@@ -876,18 +942,18 @@ document.getElementById("station-delete-btn").addEventListener("click", async ()
     errorMsg.innerText = "";
 
     // Popup zur Bestätigung öffnen
-    const entscheidung = confirm(`Möchten Sie die Station ${indexInput} wirklich löschen?`);
+    const entscheidung = confirm(`Möchten Sie die Station ${stationNr} wirklich löschen?`);
     if (!entscheidung) return;
 
     // Dateiname der Episode erstellen
-    const episodePath = "episode" + episodeInput;
+    const episodePath = "episode" + episodeNr;
 
     try {
         // Prüfen ob Station existiert
-        const checkExists = await fb.getDocument(episodePath, indexInput.toString());
+        const checkExists = await fb.getDocument(episodePath, stationNr.toString());
         if (checkExists !== null) {
             // Station existiert, löschen
-            await fb.deleteDocument(episodePath, indexInput.toString());
+            await fb.deleteDocument(episodePath, stationNr.toString());
         } else {
             // Station existiert nicht, abbruch
             errorMsg.innerText = "Station existiert nicht!";

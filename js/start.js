@@ -65,28 +65,37 @@ fb.onAuthChanged(async (user) => {
                     document.getElementById("start-admin-btn").style.display = "block";
                 }
 
-                // Dropdown Episoden füllen
+                // Darf Episoden ändern?
                 const dropdownEpisoden = document.getElementById("start-episoden");
                 const neueEpisodeBtn = document.getElementById("start-neue-episode-btn");
-                neueEpisodeBtn.style.display = "none";
-                dropdownEpisoden.innerHTML = "";
-                Object.entries(spielStatus.episodenKatalog).forEach(([key]) => {
-                    // Freigabe Check
-                    if (!spielStatus.episodenKatalog[key].globalAktiv) return;
-                    if (spielerInfo.episoden[key] === undefined) {
-                        // Neue Episode Knopf anzeigen
-                        neueEpisodeBtn.style.display = "block";
-                        return;
-                    }
 
-                    const opt = document.createElement("option");
-                    opt.value = key; 
-                    opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
-                    opt.disabled = !spielerInfo.episoden[key].aktiv;
-                    if (!spielerInfo.episoden[key].aktiv) opt.textContent += " - 🔒💲";
-                    dropdownEpisoden.appendChild(opt);
-                });
-                dropdownEpisoden.value = spielerInfo.aktiveEpisode;
+                if (spielerInfo.episodenWechsel) {
+                    dropdownEpisoden.style.display = "block";
+
+                    // Dropdown Episoden füllen
+                    neueEpisodeBtn.style.display = "none";
+                    dropdownEpisoden.innerHTML = "";
+                    Object.entries(spielStatus.episodenKatalog).forEach(([key]) => {
+                        // Freigabe Check
+                        if (!spielStatus.episodenKatalog[key].globalAktiv) return;
+                        if (spielerInfo.episoden[key] === undefined) {
+                            // Neue Episode Knopf anzeigen
+                            neueEpisodeBtn.style.display = "block";
+                            return;
+                        }
+
+                        const opt = document.createElement("option");
+                        opt.value = key; 
+                        opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
+                        opt.disabled = !spielerInfo.episoden[key].aktiv;
+                        if (!spielerInfo.episoden[key].aktiv) opt.textContent += " 🔒💲";
+                        dropdownEpisoden.appendChild(opt);
+                    });
+                    dropdownEpisoden.value = spielerInfo.aktiveEpisode;
+                } else {
+                    dropdownEpisoden.style.display = "none";
+                    neueEpisodeBtn.style.display = "none";
+                }
 
                 // Bereich einblenden
                 document.getElementById("start-bereich").style.display = "block";
@@ -147,7 +156,7 @@ document.getElementById("start-fortschritt-btn").addEventListener("click", async
         opt.value = key; 
         opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
         opt.disabled = !spielerInfo.episoden[key].aktiv;
-        if (!spielerInfo.episoden[key].aktiv) opt.textContent += " - 🔒💲";
+        if (!spielerInfo.episoden[key].aktiv) opt.textContent += " 🔒💲";
         dropdownEpisoden.appendChild(opt);
     });
     dropdownEpisoden.value = spielerInfo.aktiveEpisode;
@@ -180,11 +189,19 @@ document.getElementById("start-neue-episode-btn").addEventListener("click", () =
             const opt = document.createElement("option");
             opt.value = key; 
             opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
-            if (!spielStatus.episodenKatalog[key].freeToPlay) opt.textContent += " - 🔒💲";
+            if (!spielStatus.episodenKatalog[key].freeToPlay) opt.textContent += " 🔒💲";
             dropdownEpisoden.appendChild(opt);
         }
     });
     dropdownEpisoden.selectedIndex = 0;
+
+    // Überschrift anpassen
+    const header = document.getElementById("neue-episode-header");
+    if (dropdownEpisoden.length > 1) {
+        header.innerText = `Es gibt ${dropdownEpisoden.length} neue Episoden.`;
+    } else {
+        header.innerText = `Es gibt ${dropdownEpisoden.length} neue Episode.`;
+    }
 
     // Free to play info
     const freeNachricht = document.getElementById("neue-episode-free");
@@ -298,7 +315,7 @@ document.getElementById("neue-episode-laden-btn").addEventListener("click", asyn
             opt.value = key; 
             opt.textContent = "Episode " + key + " - " + spielStatus.episodenKatalog[key].titel;
             opt.disabled = !spielerInfo.episoden[key].aktiv;
-            if (!spielerInfo.episoden[key].aktiv) opt.textContent += " - 🔒💲";
+            if (!spielerInfo.episoden[key].aktiv) opt.textContent += " 🔒💲";
             dropdownEpisoden.appendChild(opt);
         });
 
