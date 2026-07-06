@@ -1,1 +1,2 @@
 - Nachricht an Admin um eigene Jagd einzureichen
+- 
