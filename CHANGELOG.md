@@ -3,7 +3,7 @@
 Alle signifikanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 
-## [v]
+## [v1.9.0]
 ### Hinzugefügt
 * README und CHANGELOG erstellt.
 * Admin kann das Wechseln von Episoden für einzelne Spieler verbieten.
