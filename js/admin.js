@@ -360,18 +360,18 @@ document.getElementById("spieler-bearbeiten-abort-btn").addEventListener("click"
 document.getElementById("spieler-bearbeiten-name").addEventListener("change", async (event) => {
     // Spieler Index aus Dropdown holen
     const dropdownSpieler = event.target.value;
-    const auswahlIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler);
+    const spielerIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler);
 
     // Dropdown für aktive Episoden füllen (Nur vom Spieler geladene)
     const dropdownAktiveEpisode = document.getElementById("spieler-bearbeiten-aktive-episode");
     dropdownAktiveEpisode.innerHTML = "";
-    const spielerEpisodenKeys = Object.keys(alleSpieler[auswahlIndex].episoden);
+    const spielerEpisodenKeys = Object.keys(alleSpieler[spielerIndex].episoden);
     for (let i = 1; i <= spielerEpisodenKeys.length; i++) {
         const opt = document.createElement("option");
         opt.value = i;
         const key = spielerEpisodenKeys[i-1];
         opt.textContent = "Episode " + (key) + " - " + spielStatus.episodenKatalog[key].titel;
-        if (!alleSpieler[auswahlIndex].episoden[key].aktiv) opt.textContent += " 🔒💲";
+        if (!alleSpieler[spielerIndex].episoden[key].aktiv) opt.textContent += " 🔒💲";
         dropdownAktiveEpisode.appendChild(opt);
     };
 
@@ -384,10 +384,10 @@ document.getElementById("spieler-bearbeiten-name").addEventListener("change", as
         opt.value = i;
         const key = alleEpisodenKeys[i-1];
         opt.textContent = "Episode " + (key) + " - " + spielStatus.episodenKatalog[key].titel;
-        if (alleSpieler[auswahlIndex].episoden?.[key] !== undefined) {
+        if (alleSpieler[spielerIndex].episoden?.[key] !== undefined) {
             // Wenn Spieler die Episode geladen hat
             if (!spielStatus.episodenKatalog[key].freeToPlay) {
-                if (!alleSpieler[auswahlIndex].episoden[key].aktiv) {
+                if (!alleSpieler[spielerIndex].episoden[key].aktiv) {
                     opt.textContent += " 🔒💲";
                 } else {
                     opt.textContent += " 💲";
@@ -418,7 +418,7 @@ document.getElementById("spieler-bearbeiten-name").addEventListener("change", as
     });
 
     // Dropdown auf Spieler einstellen
-    const auswahlSpieler = alleSpieler[auswahlIndex];
+    const auswahlSpieler = alleSpieler[spielerIndex];
     const spielerEpisode = auswahlSpieler.episoden[dropdownEpisode.value];
     dropdownStation.value = String(spielerEpisode.station);
     dropdownAktiveEpisode.value = String(auswahlSpieler.aktiveEpisode);
@@ -433,14 +433,17 @@ document.getElementById("spieler-bearbeiten-name").addEventListener("change", as
 });
 
 document.getElementById("spieler-bearbeiten-episode").addEventListener("change", async (event) => {
-    const auswahlEpisode = event.target.value;
+    const episodeKey = event.target.value;
+    const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
+    const wechselCheckbox = document.getElementById("spieler-bearbeiten-episoden-wechsel");
 
     // Spieler Index aus Dropdown holen
     const dropdownSpieler = document.getElementById("spieler-bearbeiten-name");
-    const auswahlIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler.value);
+    const spielerIndex = alleSpieler.findIndex(spieler => spieler.spielerName === dropdownSpieler.value);
+    const auswahlSpieler = alleSpieler[spielerIndex];
 
     // Stationen zur ausgewählten Episode laden
-    await stationenLaden(auswahlEpisode);
+    await stationenLaden(episodeKey);
 
     // Dropdown der Stationen füllen
     const dropdownStation = document.getElementById("spieler-bearbeiten-station");
@@ -451,13 +454,11 @@ document.getElementById("spieler-bearbeiten-episode").addEventListener("change",
         opt.textContent = "Station " + (i+1);
         dropdownStation.appendChild(opt);
     });
-    const aktivCheckbox = document.getElementById("spieler-bearbeiten-aktiv");
 
     // Optionen setzen
-    const auswahlSpieler = alleSpieler[auswahlIndex];
-    if (auswahlSpieler.episoden[auswahlEpisode] !== undefined) {
+    if (auswahlSpieler.episoden[episodeKey] !== undefined) {
         // Dropdown auf Spieler einstellen
-        const spielerEpisode = auswahlSpieler.episoden[auswahlEpisode];
+        const spielerEpisode = auswahlSpieler.episoden[episodeKey];
         dropdownStation.value = String(spielerEpisode.station);
 
         // Episoden Freigabe auswerten
@@ -467,11 +468,10 @@ document.getElementById("spieler-bearbeiten-episode").addEventListener("change",
         dropdownStation.value = "1";
 
         // Episoden FreeToPlay auswerten
-        aktivCheckbox.checked = spielStatus.episodenKatalog[auswahlEpisode].freeToPlay;
+        aktivCheckbox.checked = spielStatus.episodenKatalog[episodeKey].freeToPlay;
     }
 
     // Episoden Wechsel auswerten
-    const wechselCheckbox = document.getElementById("spieler-bearbeiten-episoden-wechsel");
     wechselCheckbox.checked = auswahlSpieler.episodenWechsel;
 });
 
@@ -923,12 +923,12 @@ document.getElementById("station-save-btn").addEventListener("click", async () =
 });
 
 document.getElementById("station-delete-btn").addEventListener("click", async () => {
-    const indexInput = document.getElementById("station-nummer").value;
-    const episodeInput = document.getElementById("station-episode").value;
+    const stationNr = document.getElementById("station-nummer").value;
+    const episodeNr = document.getElementById("station-episode").value;
     const errorMsg = document.getElementById("station-error-msg");
 
     // Input prüfen
-    if (!indexInput) {
+    if (!stationNr) {
         errorMsg.innerText = "Bitte Stationsnummer zum löschen angeben!";
         return;
     }
@@ -942,18 +942,18 @@ document.getElementById("station-delete-btn").addEventListener("click", async ()
     errorMsg.innerText = "";
 
     // Popup zur Bestätigung öffnen
-    const entscheidung = confirm(`Möchten Sie die Station ${indexInput} wirklich löschen?`);
+    const entscheidung = confirm(`Möchten Sie die Station ${stationNr} wirklich löschen?`);
     if (!entscheidung) return;
 
     // Dateiname der Episode erstellen
-    const episodePath = "episode" + episodeInput;
+    const episodePath = "episode" + episodeNr;
 
     try {
         // Prüfen ob Station existiert
-        const checkExists = await fb.getDocument(episodePath, indexInput.toString());
+        const checkExists = await fb.getDocument(episodePath, stationNr.toString());
         if (checkExists !== null) {
             // Station existiert, löschen
-            await fb.deleteDocument(episodePath, indexInput.toString());
+            await fb.deleteDocument(episodePath, stationNr.toString());
         } else {
             // Station existiert nicht, abbruch
             errorMsg.innerText = "Station existiert nicht!";
